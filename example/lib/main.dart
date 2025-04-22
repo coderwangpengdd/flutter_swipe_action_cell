@@ -228,9 +228,9 @@ class _SwipeActionPageState extends State<SwipeActionPage> {
                 debugPrint("[animation] 动画结束回应 --- 1");
 
                 debugPrint("[animation] 动画结束回应 --- 2");
+                await handler(false);
                 list.removeAt(index);
                 setState(() {});
-                await handler(true);
               }),
           // SwipeAction(title: "action2", color: Colors.grey, onTap: (handler) {}),
         ],

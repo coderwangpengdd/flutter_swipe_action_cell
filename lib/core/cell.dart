@@ -240,10 +240,10 @@ class SwipeActionCellState extends State<SwipeActionCell>
         CurvedAnimation(parent: controller, curve: widget.openAnimationCurve);
     closeCurvedAnim =
         CurvedAnimation(parent: controller, curve: widget.closeAnimationCurve);
-    overCurvedAnim = CurvedAnimation(
-        parent: controller, curve: Curves.easeInOutCubicEmphasized);
+    overCurvedAnim =
+        CurvedAnimation(parent: controller, curve: Curves.easeInOutCirc);
     deleteCurvedAnim =
-        CurvedAnimation(parent: deleteController, curve: Curves.easeInToLinear);
+        CurvedAnimation(parent: deleteController, curve: Curves.easeOut);
     editCurvedAnim =
         CurvedAnimation(parent: editController, curve: Curves.linear);
     _listenEvent();
@@ -831,13 +831,14 @@ class SwipeActionCellState extends State<SwipeActionCell>
     _resetAnimValue();
     debugPrint("对比2：${currentOffset.dx}");
     if (mounted) {
-      animation = Tween<double>(begin: -maxTrailingPullWidth, end: -(width))
-          .animate(overCurvedAnim)
-        ..addListener(() {
-          if (lockAnim) return;
-          this.currentOffset = Offset(animation.value, 0);
-          setState(() {});
-        });
+      animation =
+          Tween<double>(begin: -maxTrailingPullWidth, end: -(width + 20))
+              .animate(closeCurvedAnim)
+            ..addListener(() {
+              if (lockAnim) return;
+              this.currentOffset = Offset(animation.value, 0);
+              setState(() {});
+            });
 
       controller.duration =
           Duration(milliseconds: widget.closeAnimationDuration);
@@ -894,7 +895,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
   /// delete this cell and return the [Future] of the animation
   Future<void> deleteWithAnim() async {
     debugPrint("啥动画");
-    animation = Tween<double>(begin: 1.0, end: 0.01).animate(deleteCurvedAnim)
+    animation = Tween<double>(begin: 1.0, end: 1.0).animate(deleteCurvedAnim)
       ..addListener(() {
         /// When quickly click the delete button,the animation will not be seen
         /// so the code below is to solve this problem....
@@ -992,7 +993,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
           : currentOffset,
       transformHitTests: false,
       child: SizedBox(
-        width: double.infinity,
+        width: MediaQuery.of(context).size.width,
         child: IgnorePointer(
             ignoring: editController.isAnimating ||
                 editing ||
@@ -1022,7 +1023,6 @@ class SwipeActionCellState extends State<SwipeActionCell>
               child: LayoutBuilder(
                 builder: (BuildContext context, BoxConstraints constraints) {
                   width = constraints.maxWidth;
-                  debugPrint("宽度 ---- ${width}");
                   // Action buttons
                   final bool shouldHideActionButtons =
                       currentOffset.dx == 0.0 ||

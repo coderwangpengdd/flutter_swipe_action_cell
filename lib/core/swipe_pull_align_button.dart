@@ -227,6 +227,8 @@ class _SwipePullAlignButtonState extends State<SwipePullAlignButton>
       offsetX = data.currentOffset;
     }
 
+    debugPrint("offsetX : ${offsetX}");
+
     return GestureDetector(
       onTap: () {
         if (whenFirstAction &&
