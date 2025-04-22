@@ -179,6 +179,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
   late Animation<double> animation;
   late Animation<double> openCurvedAnim;
   late Animation<double> closeCurvedAnim;
+  late Animation<double> overCurvedAnim;
   late Animation<double> deleteCurvedAnim;
   late Animation<double> editCurvedAnim;
 
@@ -239,6 +240,8 @@ class SwipeActionCellState extends State<SwipeActionCell>
         CurvedAnimation(parent: controller, curve: widget.openAnimationCurve);
     closeCurvedAnim =
         CurvedAnimation(parent: controller, curve: widget.closeAnimationCurve);
+    overCurvedAnim = CurvedAnimation(
+        parent: controller, curve: Curves.easeInOutCubicEmphasized);
     deleteCurvedAnim =
         CurvedAnimation(parent: deleteController, curve: Curves.easeInToLinear);
     editCurvedAnim =
@@ -282,8 +285,10 @@ class SwipeActionCellState extends State<SwipeActionCell>
     double sum = 0.0;
 
     for (final action in widget.trailingActions!) {
+      // debugPrint("space : ${action.widthSpace}");
       sum += action.widthSpace;
     }
+    // debugPrint("sum : ${sum}");
     return sum;
   }
 
@@ -326,6 +331,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
           currentOffset.dx != 0.0 &&
           !editing &&
           !editController.isAnimating) {
+        debugPrint("关闭2");
         closeWithAnim();
         _closeNestedAction();
       }
@@ -469,6 +475,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
     final bool isScrolling = scrollPosition?.isScrollingNotifier.value ?? false;
     final bool isCellOpening = currentOffset.dx != 0.0;
     if (isCellOpening && isScrolling && !editing) {
+      debugPrint("关闭3");
       closeWithAnim();
       _closeNestedAction();
     }
@@ -503,6 +510,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
         widget.trailingActions![0].performsFirstActionWithFullSwipe;
 
     if (leadingActionCanFullSwipe || trailingActionCanFullSwipe) {
+      // debugPrint("多次触摸");
       _updateWithFullDraggableEffect(details);
     } else {
       _updateWithNormalEffect(details);
@@ -511,9 +519,14 @@ class SwipeActionCellState extends State<SwipeActionCell>
 
   void _updateWithFullDraggableEffect(DragUpdateDetails details) {
     currentOffset += Offset(details.delta.dx, 0);
+    debugPrint("难受1 : ${details.delta.dx}");
 
     /// set performsFirstActionWithFullSwipe
-    if (currentOffset.dx.abs() > widget.fullSwipeFactor * width) {
+    // debugPrint(
+    //     "滑动距离 ： ${currentOffset.dx.abs()} , ${widget.fullSwipeFactor}, ${width}, ${MediaQuery.of(context).size.width}");
+    if ((currentOffset.dx.abs() + 2 > widget.fullSwipeFactor * width)) {
+      debugPrint(
+          "难受2 ： ${currentOffset.dx.abs()} , ${widget.fullSwipeFactor * width}");
       if (!lastItemOut) {
         SwipeActionStore.getInstance()
             .bus
@@ -522,7 +535,9 @@ class SwipeActionCellState extends State<SwipeActionCell>
         HapticFeedback.heavyImpact();
       }
     } else {
+      debugPrint("难受3");
       if (lastItemOut) {
+        debugPrint("难受6");
         SwipeActionStore.getInstance()
             .bus
             .fire(PullLastButtonEvent(key: widget.key!, isPullingOut: false));
@@ -530,20 +545,24 @@ class SwipeActionCellState extends State<SwipeActionCell>
         HapticFeedback.heavyImpact();
       }
     }
-
+    debugPrint("难受4");
     if (currentOffset.dx.abs() > width) {
       if (currentOffset.dx < 0) {
+        debugPrint("难受5");
         currentOffset = Offset(-width, 0);
       } else {
+        debugPrint("难受6");
         currentOffset = Offset(width, 0);
       }
     }
-
+    debugPrint("难受7");
     modifyOffsetIfOverScrolled();
     setState(() {});
   }
 
   void _updateWithNormalEffect(DragUpdateDetails details) {
+    debugPrint("什么时候执行");
+
     /// When currentOffset.dx == 0,need to exec this code to judge which direction
     if (currentOffset.dx == 0.0) {
       if (details.delta.dx < 0) {
@@ -583,6 +602,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
   void modifyOffsetIfOverScrolled() {
     if ((!hasLeadingAction && currentOffset.dx > 0.0) ||
         (!hasTrailingAction && currentOffset.dx < 0.0)) {
+      debugPrint("难受9");
       currentOffset = Offset.zero;
     }
   }
@@ -594,61 +614,157 @@ class SwipeActionCellState extends State<SwipeActionCell>
             widget.leadingActions![0].performsFirstActionWithFullSwipe ||
         trailingActionsCount > 0 &&
             widget.trailingActions![0].performsFirstActionWithFullSwipe;
-
+    debugPrint("滑动结束 ： ${lastItemOut} , ${canFullSwipe}");
     if (lastItemOut && canFullSwipe) {
       CompletionHandler completionHandler = (delete) async {
+        debugPrint("执行完成1");
         if (delete) {
+          debugPrint("执行完成2");
           SwipeActionStore.getInstance()
               .bus
               .fire(IgnorePointerEvent(ignore: true));
           if (widget.firstActionWillCoverAllSpaceOnDeleting) {
+            debugPrint("执行完成3");
             SwipeActionStore.getInstance()
                 .bus
                 .fire(PullLastButtonToCoverCellEvent(key: widget.key!));
           }
+          debugPrint("执行完成4");
 
           /// wait animation to complete
           await deleteWithAnim();
         } else {
           lastItemOut = false;
           _closeNestedAction();
+          debugPrint("关闭4");
 
           /// wait animation to complete
           await closeWithAnim();
         }
       };
 
+      debugPrint("滑动：${whenTrailingActionShowing} , ${widget.trailingActions}");
       if (whenTrailingActionShowing && widget.trailingActions != null) {
-        widget.trailingActions?[0].onTap(completionHandler);
+        debugPrint("草淡了");
+        widget.trailingActions?[0].onQuickTap();
+        await closeWithAnim();
+        _closeNestedAction();
+        widget.trailingActions?[0].onTap(completionHandler, false);
       } else if (whenLeadingActionShowing && widget.leadingActions != null) {
-        widget.leadingActions?[0].onTap(completionHandler);
+        widget.leadingActions?[0].onTap(completionHandler, false);
       }
     } else {
       /// normal dragging update
       if (details.velocity.pixelsPerSecond.dx < 0.0) {
-        if (!whenLeadingActionShowing && hasTrailingAction) {
-          _open(trailing: true);
+        // 这里需要在判断一层
+
+        debugPrint("666 : ${currentOffset.dx}，${-(maxTrailingPullWidth + 60)}");
+        if (currentOffset.dx < -(maxTrailingPullWidth + 20)) {
+          debugPrint("我想删除这个cell");
+          // 将偏移量设置成最大
+          HapticFeedback.heavyImpact();
+          SwipeActionStore.getInstance()
+              .bus
+              .fire(PullLastButtonEvent(key: widget.key!, isPullingOut: true));
+          debugPrint("对比1：${this.currentOffset.dx}");
+
+          CompletionHandler completionHandler = (delete) async {
+            debugPrint("执行完成");
+            if (delete) {
+              SwipeActionStore.getInstance()
+                  .bus
+                  .fire(IgnorePointerEvent(ignore: true));
+              if (widget.firstActionWillCoverAllSpaceOnDeleting) {
+                SwipeActionStore.getInstance()
+                    .bus
+                    .fire(PullLastButtonToCoverCellEvent(key: widget.key!));
+              }
+
+              /// wait animation to complete
+              await deleteWithAnim();
+            } else {
+              lastItemOut = false;
+              _closeNestedAction();
+              debugPrint("关闭4");
+
+              /// wait animation to complete
+              await closeWithAnim();
+            }
+          };
+          widget.trailingActions?[0].onQuickTap();
+
+          await overWithAnim(isOver: true);
+
+          await closeWithAnim(isOver: true);
+          _closeNestedAction();
+          widget.trailingActions?[0].onTap(completionHandler, true);
         } else {
-          closeWithAnim();
+          _open(trailing: true);
         }
+
         return;
       } else if (details.velocity.pixelsPerSecond.dx > 0.0) {
         if (!whenTrailingActionShowing && hasLeadingAction) {
           _open(trailing: false);
         } else {
+          debugPrint("关闭6");
           closeWithAnim();
         }
         return;
       }
 
       if (whenTrailingActionShowing) {
+        debugPrint(
+            "看下数据 ${-currentOffset.dx} , ${maxTrailingPullWidth} , ${maxTrailingPullWidth / 4}");
         if (-currentOffset.dx < maxTrailingPullWidth / 4) {
+          debugPrint("关闭7");
           closeWithAnim();
         } else {
-          _open(trailing: true);
+          if (-currentOffset.dx >= (maxTrailingPullWidth + 20)) {
+            debugPrint("偏移量超过了屏幕宽度的一半了");
+            // 将偏移量设置成最大
+            HapticFeedback.heavyImpact();
+            SwipeActionStore.getInstance().bus.fire(
+                PullLastButtonEvent(key: widget.key!, isPullingOut: true));
+            debugPrint("对比1：${this.currentOffset.dx}");
+
+            CompletionHandler completionHandler = (delete) async {
+              debugPrint("执行完成");
+              if (delete) {
+                SwipeActionStore.getInstance()
+                    .bus
+                    .fire(IgnorePointerEvent(ignore: true));
+                if (widget.firstActionWillCoverAllSpaceOnDeleting) {
+                  SwipeActionStore.getInstance()
+                      .bus
+                      .fire(PullLastButtonToCoverCellEvent(key: widget.key!));
+                }
+
+                /// wait animation to complete
+                await deleteWithAnim();
+              } else {
+                lastItemOut = false;
+                _closeNestedAction();
+                debugPrint("关闭4");
+
+                /// wait animation to complete
+                await closeWithAnim();
+              }
+            };
+            widget.trailingActions?[0].onQuickTap();
+
+            await overWithAnim(isOver: true);
+
+            await closeWithAnim(isOver: true);
+            _closeNestedAction();
+            widget.trailingActions?[0].onTap(completionHandler, true);
+          } else {
+            _open(trailing: true);
+          }
         }
       } else if (whenLeadingActionShowing) {
         if (currentOffset.dx < maxLeadingPullWidth / 4) {
+          debugPrint("关闭8");
           closeWithAnim();
         } else {
           _open(trailing: false);
@@ -694,6 +810,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
           .animate(openCurvedAnim)
         ..addListener(() {
           if (lockAnim) return;
+          // debugPrint("hey : ${animation.value}");
           this.currentOffset = Offset(animation.value, 0);
           setState(() {});
         });
@@ -708,10 +825,36 @@ class SwipeActionCellState extends State<SwipeActionCell>
   }
 
   /// close this cell and return the [Future] of the animation
-  Future<void> closeWithAnim() async {
+  Future<void> overWithAnim({bool isOver = false}) async {
     //when close animation is running,ignore action button hit test
     ignoreActionButtonHit = true;
     _resetAnimValue();
+    debugPrint("对比2：${currentOffset.dx}");
+    if (mounted) {
+      animation = Tween<double>(begin: -maxTrailingPullWidth, end: -(width))
+          .animate(overCurvedAnim)
+        ..addListener(() {
+          if (lockAnim) return;
+          this.currentOffset = Offset(animation.value, 0);
+          setState(() {});
+        });
+
+      controller.duration =
+          Duration(milliseconds: widget.closeAnimationDuration);
+      return controller.forward()
+        ..whenCompleteOrCancel(() {
+          ignoreActionButtonHit = false;
+        });
+    }
+  }
+
+  /// close this cell and return the [Future] of the animation
+  Future<void> closeWithAnim({bool isOver = false}) async {
+    //when close animation is running,ignore action button hit test
+    ignoreActionButtonHit = true;
+    _resetAnimValue();
+
+    debugPrint("对比2：${currentOffset.dx}");
     if (mounted) {
       animation = Tween<double>(begin: currentOffset.dx, end: 0.0)
           .animate(closeCurvedAnim)
@@ -747,8 +890,10 @@ class SwipeActionCellState extends State<SwipeActionCell>
     lockAnim = false;
   }
 
+  // 这是折叠效果那种动画
   /// delete this cell and return the [Future] of the animation
   Future<void> deleteWithAnim() async {
+    debugPrint("啥动画");
     animation = Tween<double>(begin: 1.0, end: 0.01).animate(deleteCurvedAnim)
       ..addListener(() {
         /// When quickly click the delete button,the animation will not be seen
@@ -776,32 +921,33 @@ class SwipeActionCellState extends State<SwipeActionCell>
           GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
               () => TapGestureRecognizer(), (instance) {
         instance
-          ..onTap = editing && !editController.isAnimating ||
-                  currentOffset.dx != 0.0
-              ? () {
-                  if (editing && !editController.isAnimating) {
-                    assert(
-                        widget.index != null,
-                        "From SwipeActionCell:\nIf you want to enter edit mode,please pass the 'index' parameter in SwipeActionCell\n"
-                        "=====================================================================================\n"
-                        "如果你要进入编辑模式，请在SwipeActionCell中传入index 参数，他的值就是你列表组件的itemBuilder中返回的index即可");
+          ..onTap =
+              editing && !editController.isAnimating || currentOffset.dx != 0.0
+                  ? () {
+                      if (editing && !editController.isAnimating) {
+                        assert(
+                            widget.index != null,
+                            "From SwipeActionCell:\nIf you want to enter edit mode,please pass the 'index' parameter in SwipeActionCell\n"
+                            "=====================================================================================\n"
+                            "如果你要进入编辑模式，请在SwipeActionCell中传入index 参数，他的值就是你列表组件的itemBuilder中返回的index即可");
 
-                    if (selected) {
-                      widget.controller?.selectedSet.remove(widget.index);
-                      _updateControllerSelectedIndexChangedCallback(
-                          selected: false);
-                    } else {
-                      widget.controller?.selectedSet.add(widget.index!);
-                      _updateControllerSelectedIndexChangedCallback(
-                          selected: true);
+                        if (selected) {
+                          widget.controller?.selectedSet.remove(widget.index);
+                          _updateControllerSelectedIndexChangedCallback(
+                              selected: false);
+                        } else {
+                          widget.controller?.selectedSet.add(widget.index!);
+                          _updateControllerSelectedIndexChangedCallback(
+                              selected: true);
+                        }
+                        setState(() {});
+                      } else if (currentOffset.dx != 0) {
+                        debugPrint("关闭1");
+                        closeWithAnim();
+                        _closeNestedAction();
+                      }
                     }
-                    setState(() {});
-                  } else if (currentOffset.dx != 0 && !controller.isAnimating) {
-                    closeWithAnim();
-                    _closeNestedAction();
-                  }
-                }
-              : null
+                  : null
           ..gestureSettings = gestureSettings;
       }),
       if (widget.isDraggable)
@@ -876,9 +1022,12 @@ class SwipeActionCellState extends State<SwipeActionCell>
               child: LayoutBuilder(
                 builder: (BuildContext context, BoxConstraints constraints) {
                   width = constraints.maxWidth;
+                  debugPrint("宽度 ---- ${width}");
                   // Action buttons
                   final bool shouldHideActionButtons =
-                      currentOffset.dx == 0.0 || editController.isAnimating || editing;
+                      currentOffset.dx == 0.0 ||
+                          editController.isAnimating ||
+                          editing;
                   final Widget trailing = shouldHideActionButtons
                       ? const SizedBox()
                       : _buildTrailingActionButtons();
@@ -1011,7 +1160,10 @@ class SwipeActionCellState extends State<SwipeActionCell>
 ///
 typedef CompletionHandler = Future<void> Function(bool delete);
 
-typedef SwipeActionOnTapCallback = void Function(CompletionHandler handler);
+typedef SwipeActionOnTapCallback = void Function(
+    CompletionHandler handler, bool isScroll);
+
+typedef SwipeActionOnTapQuickCallback = void Function();
 
 class SwipeAction {
   /// title's text Style
@@ -1044,6 +1196,8 @@ class SwipeAction {
   /// 点击事件回调
   final SwipeActionOnTapCallback onTap;
 
+  final SwipeActionOnTapQuickCallback onQuickTap;
+
   /// 图标
   final Widget? icon;
 
@@ -1075,6 +1229,7 @@ class SwipeAction {
 
   const SwipeAction({
     required this.onTap,
+    required this.onQuickTap,
     this.title,
     this.style = const TextStyle(fontSize: 18, color: Colors.white),
     this.color = Colors.red,

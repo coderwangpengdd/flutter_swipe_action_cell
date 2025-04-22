@@ -173,6 +173,7 @@ class _SwipeActionPageState extends State<SwipeActionPage> {
       body: ListView.builder(
         physics: const BouncingScrollPhysics(),
         itemCount: list.length,
+        padding: EdgeInsets.only(right: 16),
         itemBuilder: (context, index) {
           return _item(context, index);
         },
@@ -181,49 +182,83 @@ class _SwipeActionPageState extends State<SwipeActionPage> {
   }
 
   Widget _item(BuildContext ctx, int index) {
-    return SwipeActionCell(
-      controller: controller,
-      index: index,
+    return ClipRRect(
+      borderRadius: BorderRadius.only(
+          topRight: Radius.circular(8), bottomRight: Radius.circular(8)),
+      child: SwipeActionCell(
+        controller: controller,
+        index: index,
 
-      // Required!
-      key: ValueKey(list[index]),
+        // Required!
+        key: ValueKey(list[index]),
 
-      // Animation default value below
-      // deleteAnimationDuration: 400,
-      selectedForegroundColor: Colors.black.withAlpha(30),
-      trailingActions: [
-        SwipeAction(
-            title: "delete",
-            performsFirstActionWithFullSwipe: true,
-            nestedAction: SwipeNestedAction(title: "confirm"),
-            onTap: (handler) async {
-              await handler(true);
+        // Animation default value below
+        // deleteAnimationDuration: 400,
+        selectedForegroundColor: Colors.black.withAlpha(30),
+        openAnimationCurve: const ElasticOutCurve(0.6),
+        openAnimationDuration: 800,
+        closeAnimationCurve: const ElasticOutCurve(0.6),
+        closeAnimationDuration: 800,
+        fullSwipeFactor: 1,
 
-              list.removeAt(index);
-              setState(() {});
-            }),
-        SwipeAction(title: "action2", color: Colors.grey, onTap: (handler) {}),
-      ],
-      leadingActions: [
-        SwipeAction(
-            title: "delete",
-            onTap: (handler) async {
-              await handler(true);
-              list.removeAt(index);
-              setState(() {});
-            }),
-        SwipeAction(
-            title: "action3", color: Colors.orange, onTap: (handler) {}),
-      ],
-      child: GestureDetector(
-        onTap: () {
-          Navigator.push(
-              context, CupertinoPageRoute(builder: (ctx) => const HomePage()));
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Text("This is index of ${list[index]}",
-              style: const TextStyle(fontSize: 30)),
+        trailingActions: [
+          SwipeAction(
+              backgroundRadius: 8,
+              widthSpace: 93,
+              forceAlignmentToBoundary: true,
+              content: Container(
+                alignment: Alignment.center,
+                padding: const EdgeInsets.only(right: 8),
+                width: MediaQuery.of(context).size.width,
+                decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8), color: Colors.red),
+                child: const Text("delte"),
+              ),
+              performsFirstActionWithFullSwipe: true,
+              // nestedAction: SwipeNestedAction(title: "confirm"),
+              onQuickTap: () {
+                debugPrint("快速回应");
+              },
+              onTap: (handler, isScroll) async {
+                if (isScroll) {
+                  debugPrint("[animation] : 滑动删除");
+                } else {
+                  debugPrint("[animation] : 点击删除");
+                }
+                debugPrint("[animation] 动画结束回应 --- 1");
+
+                debugPrint("[animation] 动画结束回应 --- 2");
+                list.removeAt(index);
+                setState(() {});
+                await handler(true);
+              }),
+          // SwipeAction(title: "action2", color: Colors.grey, onTap: (handler) {}),
+        ],
+        // leadingActions: [
+        //   SwipeAction(
+        //       title: "delete",
+        //       onTap: (handler) async {
+        //         await handler(true);
+        //         list.removeAt(index);
+        //         setState(() {});
+        //       }),
+        //   SwipeAction(
+        //       title: "action3", color: Colors.orange, onTap: (handler) {}),
+        // ],
+        child: GestureDetector(
+          onTap: () {
+            Navigator.push(context,
+                CupertinoPageRoute(builder: (ctx) => const HomePage()));
+          },
+          child: Container(
+            decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.lightBlue),
+            padding: const EdgeInsets.all(20.0),
+            margin: EdgeInsets.only(left: 16),
+            child: Text("This is index of ${list[index]}",
+                style: const TextStyle(fontSize: 30)),
+          ),
         ),
       ),
     );

@@ -270,7 +270,7 @@ class _SwipePullButtonState extends State<SwipePullButton>
           _animToCoverPullActionContent();
           return;
         }
-        action.onTap.call(handler);
+        action.onTap.call(handler, false);
       },
       child: Transform.translate(
         offset: Offset((trailing ? 1 : -1) * data.contentWidth + offsetX, 0),
