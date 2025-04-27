@@ -516,14 +516,11 @@ class SwipeActionCellState extends State<SwipeActionCell>
 
   void _updateWithFullDraggableEffect(DragUpdateDetails details) {
     currentOffset += Offset(details.delta.dx, 0);
-    debugPrint("难受1 : ${details.delta.dx}");
 
     /// set performsFirstActionWithFullSwipe
     // debugPrint(
     //     "滑动距离 ： ${currentOffset.dx.abs()} , ${widget.fullSwipeFactor}, ${width}, ${MediaQuery.of(context).size.width}");
     if ((currentOffset.dx.abs() + 2 > widget.fullSwipeFactor * width)) {
-      debugPrint(
-          "难受2 ： ${currentOffset.dx.abs()} , ${widget.fullSwipeFactor * width}");
       if (!lastItemOut) {
         SwipeActionStore.getInstance()
             .bus
@@ -532,9 +529,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
         HapticFeedback.heavyImpact();
       }
     } else {
-      debugPrint("难受3");
       if (lastItemOut) {
-        debugPrint("难受6");
         SwipeActionStore.getInstance()
             .bus
             .fire(PullLastButtonEvent(key: widget.key!, isPullingOut: false));
@@ -542,24 +537,18 @@ class SwipeActionCellState extends State<SwipeActionCell>
         HapticFeedback.heavyImpact();
       }
     }
-    debugPrint("难受4");
     if (currentOffset.dx.abs() > width) {
       if (currentOffset.dx < 0) {
-        debugPrint("难受5");
         currentOffset = Offset(-width, 0);
       } else {
-        debugPrint("难受6");
         currentOffset = Offset(width, 0);
       }
     }
-    debugPrint("难受7");
     modifyOffsetIfOverScrolled();
     setState(() {});
   }
 
   void _updateWithNormalEffect(DragUpdateDetails details) {
-    debugPrint("什么时候执行");
-
     /// When currentOffset.dx == 0,need to exec this code to judge which direction
     if (currentOffset.dx == 0.0) {
       if (details.delta.dx < 0) {
@@ -599,7 +588,6 @@ class SwipeActionCellState extends State<SwipeActionCell>
   void modifyOffsetIfOverScrolled() {
     if ((!hasLeadingAction && currentOffset.dx > 0.0) ||
         (!hasTrailingAction && currentOffset.dx < 0.0)) {
-      debugPrint("难受9");
       currentOffset = Offset.zero;
     }
   }
