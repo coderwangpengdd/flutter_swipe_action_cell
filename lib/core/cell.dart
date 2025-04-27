@@ -179,6 +179,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
   late Animation<double> animation;
   late Animation<double> openCurvedAnim;
   late Animation<double> closeCurvedAnim;
+  late Animation<double> overCurvedAnim;
   late Animation<double> deleteCurvedAnim;
   late Animation<double> editCurvedAnim;
 
@@ -239,6 +240,8 @@ class SwipeActionCellState extends State<SwipeActionCell>
         CurvedAnimation(parent: controller, curve: widget.openAnimationCurve);
     closeCurvedAnim =
         CurvedAnimation(parent: controller, curve: widget.closeAnimationCurve);
+    overCurvedAnim = CurvedAnimation(
+        parent: controller, curve: Curves.easeInOutCubicEmphasized);
     deleteCurvedAnim =
         CurvedAnimation(parent: deleteController, curve: Curves.easeOut);
     editCurvedAnim =
@@ -817,11 +820,10 @@ class SwipeActionCellState extends State<SwipeActionCell>
     debugPrint("对比2：${currentOffset.dx}");
     if (mounted) {
       animation = Tween<double>(begin: currentOffset.dx, end: -(width))
-          .animate(closeCurvedAnim)
+          .animate(overCurvedAnim)
         ..addListener(() {
           if (lockAnim) return;
           this.currentOffset = Offset(animation.value, 0);
-          width = width + 50;
           setState(() {});
         });
 
