@@ -1,3 +1,12 @@
+/*
+ * @Author: 王鹏 peng.wang@bigmarker.com
+ * @Date: 2025-04-24 18:25:45
+ * @LastEditors: 王鹏 peng.wang@bigmarker.com
+ * @LastEditTime: 2025-04-27 08:56:18
+ * @FilePath: /example/lib/main.dart
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
+import 'package:example/cell_item.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_swipe_action_cell/flutter_swipe_action_cell.dart';
@@ -52,6 +61,7 @@ class _HomePageState extends State<HomePage> {
 class Model {
   String id = UniqueKey().toString();
   int index = 0;
+  bool isDele = false;
 
   @override
   String toString() {
@@ -85,7 +95,7 @@ class _SwipeActionPageState extends State<SwipeActionPage> {
       /// But the whole page will be rebuilt.
       /// So when you are developing,you'd better update a little piece
       /// of UI sub tree for best performance....
-
+      ///
       setState(() {});
     });
   }
@@ -175,20 +185,21 @@ class _SwipeActionPageState extends State<SwipeActionPage> {
         itemCount: list.length,
         padding: EdgeInsets.only(right: 16),
         itemBuilder: (context, index) {
-          return _item(context, index);
+          final GlobalKey<CellItemState> key = GlobalKey<CellItemState>();
+          return _item(context, index, key);
         },
       ),
     );
   }
 
-  Widget _item(BuildContext ctx, int index) {
+  Widget _item(BuildContext ctx, int index, GlobalKey key) {
     return ClipRRect(
       borderRadius: BorderRadius.only(
           topRight: Radius.circular(8), bottomRight: Radius.circular(8)),
       child: SwipeActionCell(
         controller: controller,
         index: index,
-
+        backgroundColor: Colors.transparent,
         // Required!
         key: ValueKey(list[index]),
 
@@ -197,7 +208,7 @@ class _SwipeActionPageState extends State<SwipeActionPage> {
         selectedForegroundColor: Colors.black.withAlpha(30),
         openAnimationCurve: const ElasticOutCurve(0.6),
         openAnimationDuration: 800,
-        closeAnimationCurve: const ElasticOutCurve(0.6),
+        closeAnimationCurve: Curves.easeInOutCubicEmphasized,
         closeAnimationDuration: 800,
         fullSwipeFactor: 1,
 
@@ -211,15 +222,19 @@ class _SwipeActionPageState extends State<SwipeActionPage> {
                 padding: const EdgeInsets.only(right: 8),
                 width: MediaQuery.of(context).size.width,
                 decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8), color: Colors.red),
-                child: const Text("delte"),
+                    borderRadius: BorderRadius.circular(8),
+                    color:
+                        list[index].isDele == true ? Colors.red : Colors.green),
+                child: Text(list[index].isDele == true ? "删除" : "添加"),
               ),
               performsFirstActionWithFullSwipe: true,
-              // nestedAction: SwipeNestedAction(title: "confirm"),
               onQuickTap: () {
                 debugPrint("快速回应");
+                list[index].isDele = !list[index].isDele;
+                key.currentState?.setState(() {});
               },
               onTap: (handler, isScroll) async {
+                debugPrint("慢速回应");
                 if (isScroll) {
                   debugPrint("[animation] : 滑动删除");
                 } else {
@@ -229,7 +244,7 @@ class _SwipeActionPageState extends State<SwipeActionPage> {
 
                 debugPrint("[animation] 动画结束回应 --- 2");
                 await handler(false);
-                list.removeAt(index);
+                // list.removeAt(index);
                 setState(() {});
               }),
           // SwipeAction(title: "action2", color: Colors.grey, onTap: (handler) {}),
@@ -256,8 +271,10 @@ class _SwipeActionPageState extends State<SwipeActionPage> {
                 color: Colors.lightBlue),
             padding: const EdgeInsets.all(20.0),
             margin: EdgeInsets.only(left: 16),
-            child: Text("This is index of ${list[index]}",
-                style: const TextStyle(fontSize: 30)),
+            child: CellItem(
+              key: key,
+              model: list[index],
+            ),
           ),
         ),
       ),
